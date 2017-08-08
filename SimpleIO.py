@@ -16,8 +16,8 @@ class Editor():
         self.fontSize = 12
         self.fontChange = 2
 
-        self.windowWidth = 500
-        self.windowHeight = 50
+        self.windowWidth = 100
+        self.windowHeight = 25
 
         frame = Frame(root)
         # Scroll Bar
@@ -32,11 +32,15 @@ class Editor():
                height = self.windowHeight,              # Window Height
                font=("Helvetica", self.fontSize) )      # Font and Font Size        
         self.editor.focus()
+
+        # Scroll Bar packing
         self.yscrollbar.pack(side="right", fill="y")
         self.yscrollbar.config(command=self.editor.yview) 
 
-        # Status Bar
-        self.status = Label(root, text="Font Size: " + str(self.fontSize), relief=tkinter.SUNKEN)
+        # ## Status Bar ## #
+        # Vars
+        self.statusText = ("Font Size: " + str(self.fontSize))
+        self.status = Label(root, text=self.statusText, relief=tkinter.SUNKEN,  anchor='w')
         self.status.pack(side=tkinter.BOTTOM, fill=tkinter.X)
 
         frame.pack(fill="both", expand=1)
@@ -158,12 +162,21 @@ class Editor():
 # VIEW MENU FUNCTIONS
 ###############################################################################################
     def zoom_Out(self, event=None):
-        if self.fontSize > 0:
-            self.editor.config(font=("Helvetica", self.fontSize-self.fontChange))
+        if self.fontSize > 9:
+            self.fontSize -= 1
+            self.editor.config(font=("Helvetica", self.fontSize))
+            self.updateStatusBar()
+
     def zoom_In(self, event=None):
         if self.fontSize < 50:
-            self.editor.config(font=("Helvetica", self.fontSize+self.fontChange))
+            self.fontSize += 1
+            self.editor.config(font=("Helvetica", self.fontSize))
+            self.updateStatusBar()
 ###############################################################################################
+    def updateStatusBar(self, event=None):
+        self.status.config(text=("Font Size: " + str(self.fontSize)))
+
+
 
     def main(self, event=None):          
         self.editor.bind("<Control-o>", self.file_open) # Open File
@@ -178,10 +191,6 @@ class Editor():
         self.editor.bind("<Control-z>", self.undo)  # ^
         self.editor.bind("<Control-minus>", self.zoom_Out)
         self.editor.bind("<Control-plus>", self.zoom_In)
-
-
-
-
 
         
 if __name__ == "__main__":
