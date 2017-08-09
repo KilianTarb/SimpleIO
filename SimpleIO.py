@@ -18,20 +18,23 @@ class Editor():
         self.windowHeight = 25
 
         frame = Frame(root)
-        # Scroll Bar
+        # Scroll Bar [X and Y]
+        self.xscrollbar = Scrollbar(root, orient="horizontal")
         self.yscrollbar = Scrollbar(root, orient="vertical")
 
         # Textbox
-        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set)
+        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, bg="#1d3557", fg="#f1faee")
         self.editor.pack(side="left", fill="both", expand=1)
         self.editor.config( wrap = "none",              # use word wrapping
                undo = True, # Tk 8.4 
                width = self.windowWidth,                # Window Width
                height = self.windowHeight,              # Window Height
-               font=("Helvetica", self.fontSize) )      # Font and Font Size        
+               font=("Consolas", self.fontSize) )      # Font and Font Size        
         self.editor.focus()
 
         # Scroll Bar packing
+        self.xscrollbar.pack(side="bottom", fill="x")
+        self.xscrollbar.config(command=self.editor.xview)
         self.yscrollbar.pack(side="right", fill="y")
         self.yscrollbar.config(command=self.editor.yview) 
 
@@ -67,6 +70,13 @@ class Editor():
         viewMenu.add_command(label="Zoom In", command=self.zoom_In, accelerator="Ctrl+")
         viewMenu.add_command(label="Zoom Out", command=self.zoom_Out, accelerator="Ctrl-")
         self.menubar.add_cascade(label="View", menu=viewMenu)
+
+
+        # Menu item: Color Scheme
+        colorMenu = Menu(self.menubar, tearoff=0)
+        colorMenu.add_command(label="Plain Text")
+        colorMenu.add_command(label="Monokai")
+        self.menubar.add_cascade(label="Color Scheme", menu=colorMenu)
 
         # display the menu
         root.config(menu=self.menubar)
