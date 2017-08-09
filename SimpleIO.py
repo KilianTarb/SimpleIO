@@ -24,7 +24,7 @@ class Editor():
         # Textbox
         self.editor = Text(frame, yscrollcommand=self.yscrollbar.set)
         self.editor.pack(side="left", fill="both", expand=1)
-        self.editor.config( wrap = "word",              # use word wrapping
+        self.editor.config( wrap = "none",              # use word wrapping
                undo = True, # Tk 8.4 
                width = self.windowWidth,                # Window Width
                height = self.windowHeight,              # Window Height
@@ -171,7 +171,7 @@ class Editor():
             self.editor.config(font=("Helvetica", self.fontSize))
             self.updateStatusBar()
 ###############################################################################################
-    def /(self, event=None):
+    def updateStatusBar(self, event=None):
         self.status.config(text=("Font Size: " + str(self.fontSize)))
 
 
