@@ -12,16 +12,14 @@ class Editor():
         self.set_title()
         
 
- 
         self.fontSize = 12
-        self.fontChange = 2
 
         self.windowWidth = 100
         self.windowHeight = 25
 
         frame = Frame(root)
         # Scroll Bar
-        self.yscrollbar = Scrollbar(frame, orient="vertical")
+        self.yscrollbar = Scrollbar(root, orient="vertical")
 
         # Textbox
         self.editor = Text(frame, yscrollcommand=self.yscrollbar.set)
@@ -178,7 +176,8 @@ class Editor():
 
 
 
-    def main(self, event=None):          
+    def main(self, event=None):
+        # Key bindings          
         self.editor.bind("<Control-o>", self.file_open) # Open File
         self.editor.bind("<Control-O>", self.file_open) # ^
         self.editor.bind("<Control-S>", self.file_save) # Save File
@@ -195,6 +194,6 @@ class Editor():
         
 if __name__ == "__main__":
     root = Tk()
-    editor = Editor(root)
-    editor.main()
-    root.mainloop()
+    editor = Editor(root)       # new editor instance
+    editor.main()               # Main function
+    root.mainloop()             # Run the loop
