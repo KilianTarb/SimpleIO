@@ -11,7 +11,6 @@ class Editor():
         self.file_path = None
         self.set_title()
         
-
         self.fontSize = 12
 
         self.windowWidth = 100
@@ -23,7 +22,7 @@ class Editor():
         self.yscrollbar = Scrollbar(root, orient="vertical")
 
         # Textbox
-        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, bg="#1d3557", fg="#f1faee")
+        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, xscrollcommand=self.xscrollbar.set,bg="#1d3557", fg="#f1faee")
         self.editor.pack(side="left", fill="both", expand=1)
         self.editor.config( wrap = "none",              # use word wrapping
                undo = True, # Tk 8.4 
