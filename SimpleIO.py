@@ -173,7 +173,7 @@ class Editor():
             self.editor.config(font=("Helvetica", self.fontSize))
             self.updateStatusBar()
 ###############################################################################################
-    def updateStatusBar(self, event=None):
+    def /(self, event=None):
         self.status.config(text=("Font Size: " + str(self.fontSize)))
 
 
