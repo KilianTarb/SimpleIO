@@ -20,4 +20,9 @@ python3 SimpleIO.py
 python SimpleIO.py
 ```
 
+
+
+<span>You can also use the Python IDLE</span>
+
+
 <span>Which ever works for you</span>
