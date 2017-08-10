@@ -1,11 +1,17 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import tkinter
-from tkinter import Tk, Text, Scrollbar, Menu, messagebox, filedialog, BooleanVar, Checkbutton, Label, Entry, StringVar, Grid, Frame
+from tkinter import Tk, Text, Scrollbar, Menu, messagebox, filedialog, BooleanVar, Checkbutton, Label, Entry, StringVar, Grid, Frame, font
+import sys
+import io
 import os, subprocess, json, string
+import pygments
+from pygments.lexers.python import PythonLexer
+
 
 class Editor():
     def __init__(self, root):
+        self.create_tags()
         self.root = root        
         self.TITLE = "Simple IO"
         self.file_path = None
@@ -21,24 +27,23 @@ class Editor():
         self.xscrollbar = Scrollbar(root, orient="horizontal")
         self.yscrollbar = Scrollbar(root, orient="vertical")
 
-        # Textbox
+        # Textbox (The main text input area)
         self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, xscrollcommand=self.xscrollbar.set,bg="#1d3557", fg="#f1faee")
         self.editor.pack(side="left", fill="both", expand=1)
         self.editor.config( wrap = "none",              # use word wrapping
                undo = True, # Tk 8.4 
                width = self.windowWidth,                # Window Width
                height = self.windowHeight,              # Window Height
-               font=("Consolas", self.fontSize) )      # Font and Font Size        
+               font=("Monospace Regular", self.fontSize) )      # Font and Font Size        
         self.editor.focus()
 
-        # Scroll Bar packing
-        self.xscrollbar.pack(side="bottom", fill="x")
+        # Scroll Bars packing
+        self.xscrollbar.pack(side="bottom", fill="x")       # Horizontal Scroll Bar
         self.xscrollbar.config(command=self.editor.xview)
-        self.yscrollbar.pack(side="right", fill="y")
+        self.yscrollbar.pack(side="right", fill="y")        # Vertial Scroll Bar
         self.yscrollbar.config(command=self.editor.yview) 
 
         # ## Status Bar ## #
-        # Vars
         self.statusText = ("Font Size: " + str(self.fontSize))
         self.status = Label(root, text=self.statusText, relief=tkinter.SUNKEN,  anchor='w')
         self.status.pack(side=tkinter.BOTTOM, fill=tkinter.X)
@@ -135,7 +140,7 @@ class Editor():
     # SAVE AS
     def file_save_as(self, event=None, filepath=None):
         if filepath == None:
-            filepath = filedialog.asksaveasfilename(filetypes=(('Text files', '*.txt'), ('Python files', '*.py *.pyw'), ('All files', '*.*'))) #defaultextension='.txt'
+            filepath = tkinter.filedialog.asksaveasfilename(filetypes=(('Text files', '*.txt'), ('Python files', '*.py *.pyw'), ('All files', '*.*'))) #defaultextension='.txt'
         try:
             with open(filepath, 'wb') as f:
                 text = self.editor.get(1.0, "end-1c")
@@ -179,11 +184,75 @@ class Editor():
             self.fontSize += 1
             self.editor.config(font=("Helvetica", self.fontSize))
             self.updateStatusBar()
-###############################################################################################
+
     def updateStatusBar(self, event=None):
         self.status.config(text=("Font Size: " + str(self.fontSize)))
 
 
+# EVENTS
+###############################################################################################
+    def event_KeyPressed(self):
+        self.recolorize()
+
+    def create_tags(self):
+        """
+            thmethod creates the tags associated with each distinct style element of the 
+            source code 'dressing'
+        """
+        bold_font = font.Font(self.text, self.text.cget("font"))
+        bold_font.configure(weight=font.BOLD)
+        italic_font = font.Font(self.text, self.text.cget("font"))
+        italic_font.configure(slant=font.ITALIC)
+        bold_italic_font = font.Font(self.text, self.text.cget("font"))
+        bold_italic_font.configure(weight=font.BOLD, slant=font.ITALIC)
+        style = get_style_by_name('default')
+        
+        for ttype, ndef in style:
+            tag_font = None
+        
+            if ndef['bold'] and ndef['italic']:
+                tag_font = bold_italic_font
+            elif ndef['bold']:
+                tag_font = bold_font
+            elif ndef['italic']:
+                tag_font = italic_font
+ 
+            if ndef['color']:
+                foreground = "#%s" % ndef['color'] 
+            else:
+                foreground = None
+ 
+            self.text.tag_configure(str(ttype), foreground=foreground, font=tag_font) 
+
+    def recolorize(self):
+        """
+            this method colors and styles the prepared tags
+        """
+        code = self.text.get("1.0", "end-1c")
+        tokensource = self.lexer.get_tokens(code)
+        start_line=1
+        start_index = 0
+        end_line=1
+        end_index = 0
+        
+        for ttype, value in tokensource:
+            if "\n" in value:
+                end_line += value.count("\n")
+                end_index = len(value.rsplit("\n",1)[1])
+            else:
+                end_index += len(value)
+
+            if value not in (" ", "\n"):
+                index1 = "%s.%s" % (start_line, start_index)
+                index2 = "%s.%s" % (end_line, end_index)
+
+                for tagname in self.text.tag_names(index1): # FIXME
+                    self.text.tag_remove(tagname, index1, index2)
+
+                self.text.tag_add(str(ttype), index1, index2)
+
+            start_line = end_line
+            start_index = end_index
 
     def main(self, event=None):
         # Key bindings          
@@ -199,6 +268,7 @@ class Editor():
         self.editor.bind("<Control-z>", self.undo)  # ^
         self.editor.bind("<Control-minus>", self.zoom_Out)
         self.editor.bind("<Control-plus>", self.zoom_In)
+        self.editor.bind("<Key>", self.event_KeyPressed)
 
         
 if __name__ == "__main__":
