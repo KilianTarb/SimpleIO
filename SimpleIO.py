@@ -1,26 +1,59 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+
+"""
+Notes.
+
+    O - lexer is the language syntax highlighting support.
+
+"""
+
+
 import tkinter
-from tkinter import Tk, Text, Scrollbar, Menu, messagebox, filedialog, BooleanVar, Checkbutton, Label, Entry, StringVar, Grid, Frame, font
+import pygments
+import os
 import sys
 import io
-import os, subprocess, json, string
-import pygments
+import subprocess
+import json
+import string
+
+from tkinter import Tk, Text, Scrollbar, Menu, messagebox, filedialog, BooleanVar, Checkbutton, Label, Entry, StringVar, Grid, Frame, font, ttk, scrolledtext, _tkinter
+
 from pygments.lexers.python import PythonLexer
+from pygments.lexers.special import TextLexer
+from pygments.lexers.html import HtmlLexer
+from pygments.lexers.html import XmlLexer
+from pygments.lexers.templates import HtmlPhpLexer
+from pygments.lexers.perl import Perl6Lexer
+from pygments.lexers.ruby import RubyLexer
+from pygments.lexers.configs import IniLexer
+from pygments.lexers.configs import ApacheConfLexer
+from pygments.lexers.shell import BashLexer
+from pygments.lexers.diff import DiffLexer
+from pygments.lexers.dotnet import CSharpLexer
+from pygments.lexers.sql import MySqlLexer
 
+from pygments.styles import get_style_by_name
 
-class Editor():
-    def __init__(self, root):
-        self.create_tags()
-        self.root = root        
+class Editor(object):
+    currentLanguageName = "Plain Text"
+    currentStyleName = "default"
+    windowWidth = 100
+    windowHeight = 25
+
+    def __init__(self, root, lexer):
+
+        self.root = root
         self.TITLE = "Simple IO"
         self.file_path = None
         self.set_title()
         
         self.fontSize = 12
+        
+        self.lexer = lexer
+        self.bootstrap = [self.recolorize]
 
-        self.windowWidth = 100
-        self.windowHeight = 25
 
         frame = Frame(root)
         # Scroll Bar [X and Y]
@@ -28,14 +61,12 @@ class Editor():
         self.yscrollbar = Scrollbar(root, orient="vertical")
 
         # Textbox (The main text input area)
-        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, xscrollcommand=self.xscrollbar.set,bg="#1d3557", fg="#f1faee")
+        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, xscrollcommand=self.xscrollbar.set, bg="#000000", fg="#FFFFFF", insertbackground="#FFFFFF")
         self.editor.pack(side="left", fill="both", expand=1)
-        self.editor.config( wrap = "none",              # use word wrapping
-               undo = True, # Tk 8.4 
-               width = self.windowWidth,                # Window Width
-               height = self.windowHeight,              # Window Height
-               font=("Monospace Regular", self.fontSize) )      # Font and Font Size        
+        self.editor.config( wrap="none", undo=True, width=self.windowWidth, height=self.windowHeight, font=("Monospace Regular", self.fontSize))       
         self.editor.focus()
+        self.create_tags()
+
 
         # Scroll Bars packing
         self.xscrollbar.pack(side="bottom", fill="x")       # Horizontal Scroll Bar
@@ -43,8 +74,9 @@ class Editor():
         self.yscrollbar.pack(side="right", fill="y")        # Vertial Scroll Bar
         self.yscrollbar.config(command=self.editor.yview) 
 
+
         # ## Status Bar ## #
-        self.statusText = ("Font Size: " + str(self.fontSize))
+        self.statusText = (("Font Size: " + str(self.fontSize)) + " | " + "Langauge: " + self.currentLanguageName)
         self.status = Label(root, text=self.statusText, relief=tkinter.SUNKEN,  anchor='w')
         self.status.pack(side=tkinter.BOTTOM, fill=tkinter.X)
 
@@ -52,9 +84,7 @@ class Editor():
 
         #instead of closing the window, execute a function. Call file_quit
         root.protocol("WM_DELETE_WINDOW", self.file_quit) 
-
-
-
+            
 
         #create a top level menu
         self.menubar = Menu(root)
@@ -78,9 +108,16 @@ class Editor():
 
         # Menu item: Color Scheme
         colorMenu = Menu(self.menubar, tearoff=0)
-        colorMenu.add_command(label="Plain Text")
-        colorMenu.add_command(label="Monokai")
+        colorMenu.add_command(label="Default", command=lambda:self.changeColorScheme("default"))
+        colorMenu.add_command(label="Monokai", command=lambda:self.changeColorScheme("monokai"))
         self.menubar.add_cascade(label="Color Scheme", menu=colorMenu)
+
+        # Menu item: Languages
+        languageMenu = Menu(self.menubar, tearoff=0)
+        languageMenu.add_command(label="Plain Text", command=self.languageLexerToPlain)
+        languageMenu.add_command(label="Python", command=self.languageLexerToPython)
+        self.menubar.add_cascade(label="Language", menu=languageMenu)
+
 
         # display the menu
         root.config(menu=self.menubar)
@@ -102,6 +139,10 @@ class Editor():
         else: #not modified
             return True
     
+
+    def updateStatusBar(self, event=None):
+        self.statusText = (("Font Size: " + str(self.fontSize)) + " | " + "Langauge: " + self.currentLanguageName)
+        self.status.config(text=self.statusText)
 
 
 # FILE MENU FUNCTIONS
@@ -174,38 +215,61 @@ class Editor():
 # VIEW MENU FUNCTIONS
 ###############################################################################################
     def zoom_Out(self, event=None):
+        print("Zooming Out")
         if self.fontSize > 9:
             self.fontSize -= 1
             self.editor.config(font=("Helvetica", self.fontSize))
             self.updateStatusBar()
 
     def zoom_In(self, event=None):
+        print("Zooming In")
         if self.fontSize < 50:
             self.fontSize += 1
             self.editor.config(font=("Helvetica", self.fontSize))
             self.updateStatusBar()
 
-    def updateStatusBar(self, event=None):
-        self.status.config(text=("Font Size: " + str(self.fontSize)))
+# LANGUAGE MENU FUNCTIONS
+###############################################################################################
+    def languageLexerToPlain(self, event=None):
+        self.lexer = TextLexer()
+        self.currentLanguageName = "Plain Text"
+        self.create_tags()
+        self.recolorize()
+        self.updateStatusBar()
 
+    def languageLexerToPython(self, event=None):
+        self.lexer = PythonLexer()
+        self.currentLanguageName = "Python"
+        self.create_tags()
+        self.recolorize()
+        self.updateStatusBar()
+
+# COLOR SCHEME MENU FUNCTIONS
+###############################################################################################
+    def changeColorScheme(self, styleParam):
+        self.currentStyleName = styleParam
+        print("Changing style to: " + styleParam)
+        self.create_tags()
+        self.recolorize()
 
 # EVENTS
 ###############################################################################################
-    def event_KeyPressed(self):
+    def event_KeyPressed(self, event=None):
         self.recolorize()
+
 
     def create_tags(self):
         """
-            thmethod creates the tags associated with each distinct style element of the 
+            this method creates the tags associated with each distinct style element of the 
             source code 'dressing'
         """
-        bold_font = font.Font(self.text, self.text.cget("font"))
+        bold_font = font.Font(self.editor, self.editor.cget("font"))
         bold_font.configure(weight=font.BOLD)
-        italic_font = font.Font(self.text, self.text.cget("font"))
+        italic_font = font.Font(self.editor, self.editor.cget("font"))
         italic_font.configure(slant=font.ITALIC)
-        bold_italic_font = font.Font(self.text, self.text.cget("font"))
+        bold_italic_font = font.Font(self.editor, self.editor.cget("font"))
         bold_italic_font.configure(weight=font.BOLD, slant=font.ITALIC)
-        style = get_style_by_name('default')
+        style = get_style_by_name(self.currentStyleName)
         
         for ttype, ndef in style:
             tag_font = None
@@ -216,19 +280,17 @@ class Editor():
                 tag_font = bold_font
             elif ndef['italic']:
                 tag_font = italic_font
- 
+
             if ndef['color']:
                 foreground = "#%s" % ndef['color'] 
             else:
                 foreground = None
- 
-            self.text.tag_configure(str(ttype), foreground=foreground, font=tag_font) 
 
+            self.editor.tag_configure(str(ttype), foreground=foreground, font=tag_font) 
+
+    # This methd colors the text by using the tokens in the lexer
     def recolorize(self):
-        """
-            this method colors and styles the prepared tags
-        """
-        code = self.text.get("1.0", "end-1c")
+        code = self.editor.get("1.0", "end-1c")
         tokensource = self.lexer.get_tokens(code)
         start_line=1
         start_index = 0
@@ -241,18 +303,19 @@ class Editor():
                 end_index = len(value.rsplit("\n",1)[1])
             else:
                 end_index += len(value)
-
+ 
             if value not in (" ", "\n"):
                 index1 = "%s.%s" % (start_line, start_index)
                 index2 = "%s.%s" % (end_line, end_index)
-
-                for tagname in self.text.tag_names(index1): # FIXME
-                    self.text.tag_remove(tagname, index1, index2)
-
-                self.text.tag_add(str(ttype), index1, index2)
-
+ 
+                for tagname in self.editor.tag_names(index1): # FIXME
+                    self.editor.tag_remove(tagname, index1, index2)
+ 
+                self.editor.tag_add(str(ttype), index1, index2)
+ 
             start_line = end_line
             start_index = end_index
+ 
 
     def main(self, event=None):
         # Key bindings          
@@ -272,7 +335,9 @@ class Editor():
 
         
 if __name__ == "__main__":
+    print("Executing...")
     root = Tk()
-    editor = Editor(root)       # new editor instance
-    editor.main()               # Main function
-    root.mainloop()             # Run the loop
+    editor = Editor(root, lexer = TextLexer())      # new editor instance
+    editor.main()                                   # Main function
+    root.mainloop()                                 # Run the loop
+
