@@ -1,14 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-"""
-Notes.
-
-    O - lexer is the language syntax highlighting support.
-
-"""
-
-
 import tkinter
 import pygments
 import os
@@ -61,9 +53,9 @@ class Editor(object):
         self.yscrollbar = Scrollbar(root, orient="vertical")
 
         # Textbox (The main text input area)
-        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, xscrollcommand=self.xscrollbar.set, bg="#000000", fg="#FFFFFF", insertbackground="#FFFFFF")
+        self.editor = Text(frame, yscrollcommand=self.yscrollbar.set, xscrollcommand=self.xscrollbar.set, bg="#FFFFFF", fg="#000000", insertbackground="#000000")
         self.editor.pack(side="left", fill="both", expand=1)
-        self.editor.config( wrap="none", undo=True, width=self.windowWidth, height=self.windowHeight, font=("Monospace Regular", self.fontSize))       
+        self.editor.config( wrap="none", undo=True, width=self.windowWidth, height=self.windowHeight, font=("Consolas", self.fontSize), tabs=('1c'))       
         self.editor.focus()
         self.create_tags()
 
@@ -126,11 +118,14 @@ class Editor(object):
 
     # If user trys to quit while there is unsaved content
     def save_if_modified(self, event=None):
+        print("Checking if current save is modified...")
         if self.editor.edit_modified(): #modified
+            print("Current save is modified")
             response = messagebox.askyesnocancel("Save?", "This document has been modified. Do you want to save changes?") #yes = True, no = False, cancel = None
             if response: #yes/save
                 result = self.file_save()
                 if result == "saved": #saved
+                    print("Saved")
                     return True
                 else: #save cancelled
                     return None
@@ -197,6 +192,7 @@ class Editor(object):
     def file_quit(self, event=None):
         result = self.save_if_modified()
         if result != None: #None => Aborted or Save cancelled, False => Discarded, True = Saved or Not modified
+            print("Exiting with code: 0")
             self.root.destroy() #sys.exit(0)
     # Show the file name on the top of the window
     def set_title(self, event=None):
@@ -231,6 +227,7 @@ class Editor(object):
 # LANGUAGE MENU FUNCTIONS
 ###############################################################################################
     def languageLexerToPlain(self, event=None):
+        print("Setting language to: Plain Text")
         self.lexer = TextLexer()
         self.currentLanguageName = "Plain Text"
         self.create_tags()
@@ -238,6 +235,7 @@ class Editor(object):
         self.updateStatusBar()
 
     def languageLexerToPython(self, event=None):
+        print("Setting language to: Python")
         self.lexer = PythonLexer()
         self.currentLanguageName = "Python"
         self.create_tags()
@@ -251,6 +249,12 @@ class Editor(object):
         print("Changing style to: " + styleParam)
         self.create_tags()
         self.recolorize()
+
+        # Changing the background color
+        if styleParam == "default":
+            self.editor.config(bg="#FFFFFF", fg="#000000", insertbackground="#000000")
+        elif styleParam == "monokai":
+            self.editor.config(bg="#272822", fg="#FFFFFF", insertbackground="#FFFFFF")
 
 # EVENTS
 ###############################################################################################
